@@ -23,3 +23,8 @@ crm_note  Notes/remarks
 data_source  Source 
 possession_time
 description
+
+✅ PostgreSQL connection fixed — killed 97 idle connections
+✅ MinIO running on http://localhost:9000 — bucket csv-uploads created
+✅ Backend deps installed (minio, openai, pino, csv-parse, knex, etc.)
+✅ DESIGN.md updated with SOLID/DRY production architecture

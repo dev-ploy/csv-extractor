@@ -23,3 +23,101 @@ crm_note  Notes/remarks
 data_source  Source 
 possession_time
 description
+
+routes-> api endpoints
+controllers-> request and responses 
+db-> db layer
+services-> core logic
+repo-> dof db layer
+infra-> groq redis temporal logging docker k8s 
+
+
+frontend ( user is regiseted in db)
+   |
+upload csv
+    |
+route 
+    |
+controller
+    |
+service
+    |
+infra 
+    |
+db 
+    |
+response 
+
+| Layer          | Technology       | Why?                                    |
+| -------------- | ---------------- | --------------------------------------- |
+| Runtime        | Node.js          | Fast I/O and rich ecosystem             |
+| Framework      | Express          | Simple and widely used                  |
+| Language       | Javascript       | Type safety and maintainability         |
+| Database       | PostgreSQL       | Relational data with strong consistency |
+| ORM            | Prisma           | Excellent developer experience          |
+| Cache          | Redis            | Fast caching and progress tracking      |
+| AI             | Groq SDK         | Low latency inference                   |
+| Workflow       | Temporal         | Durable background workflows            |
+| Validation     | Zod              | Runtime validation                      |
+| Authentication | JWT + bcrypt     | Stateless auth                          |
+| Logging        | Winston/Pino     | Structured logs                         |
+| Testing        | Jest + Supertest | Unit and integration testing            |
+
+
+
+backend/
+│
+├── src/
+│
+├── api/
+│   ├── routes/
+│   ├── controllers/
+│   └── middleware/
+│
+├── services/
+│
+├── repositories/
+│
+├── database/
+│   ├── prisma/
+│   └── migrations/
+│
+├── models/
+│
+├── validators/
+│
+├── llm/
+│
+├── cache/
+│
+├── temporal/
+│
+├── auth/
+│
+├── permissions/
+│
+├── config/
+│
+├── utils/
+│
+├── types/
+│
+├── workers/
+│
+├── tests/
+│
+└── server.ts
+
+clean architecture
+Layered design
+solid principles 
+
+responsive frontend
+scalable backend 
+ai layer
+persistence
+workflow
+cache
+security
+observability
+quality tests

@@ -1,0 +1,56 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UploadSession {
+  id            String   @id @default(uuid()) @db.Uuid
+  filename      String
+  originalCsv   String   @map("original_csv")
+  headerMapping Json?    @map("header_mapping") @db.JsonB
+  totalRows     Int      @default(0) @map("total_rows")
+  status        String   @default("pending") // pending | mapped | imported | failed
+  createdAt     DateTime @default(now()) @map("created_at")
+  updatedAt     DateTime @updatedAt @map("updated_at")
+  expiresAt     DateTime @default(now()) @map("expires_at")
+
+  leads Lead[]
+
+  @@index([status])
+  @@index([expiresAt])
+  @@map("upload_sessions")
+}
+
+model Lead {
+  id                        String    @id @default(uuid()) @db.Uuid
+  uploadSessionId           String    @map("upload_session_id") @db.Uuid
+  createdAt                 DateTime  @default(now()) @map("created_at")
+  email                     String?   @db.VarChar(320)
+  countryCode               String?   @map("country_code") @db.VarChar(5)
+  mobileWithoutCountryCode  String?   @map("mobile_without_country_code") @db.VarChar(20)
+  company                   String?   @db.VarChar(255)
+  city                      String?   @db.VarChar(255)
+  state                     String?   @db.VarChar(255)
+  country                   String?   @db.VarChar(255)
+  leadOwner                 String?   @map("lead_owner") @db.VarChar(255)
+  crmStatus                 String?   @map("crm_status") @db.VarChar(100)
+  crmNote                   String?   @map("crm_note")
+  dataSource                String?   @map("data_source") @db.VarChar(255)
+  possessionTime            DateTime? @map("possession_time")
+  description               String?
+  rawData                   Json?     @map("raw_data") @db.JsonB
+  importStatus              String    @default("parsed") @map("import_status") // parsed | imported | skipped
+  skipReason                String?   @map("skip_reason")
+
+  uploadSession UploadSession @relation(fields: [uploadSessionId], references: [id], onDelete: Cascade)
+
+  @@unique([uploadSessionId, email])
+  @@index([email])
+  @@index([uploadSessionId])
+  @@index([createdAt])
+  @@map("leads")
+}
