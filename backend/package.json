@@ -1,0 +1,28 @@
+{
+  "name": "csv-extractor-backend",
+  "version": "1.0.0",
+  "description": "Node.js Express backend for CSV import pipeline with AI field mapping",
+  "main": "src/index.js",
+  "scripts": {
+    "dev": "node --watch src/index.js",
+    "start": "node src/index.js",
+    "migrate": "knex migrate:latest",
+    "migrate:rollback": "knex migrate:rollback"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "cors": "^2.8.5",
+    "helmet": "^8.0.0",
+    "morgan": "^1.10.0",
+    "multer": "^1.4.5-lts.1",
+    "knex": "^3.1.0",
+    "pg": "^8.13.1",
+    "csv-parse": "^5.6.0",
+    "uuid": "^11.0.3",
+    "dotenv": "^16.4.5",
+    "winston": "^3.17.0",
+    "express-rate-limit": "^7.4.0",
+    "compression": "^1.7.4",
+    "zod": "^3.24.0"
+  }
+}
