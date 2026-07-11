@@ -54,13 +54,22 @@ ENVIRONMENT (.env)
 ║    - Render: create Redis service, copy Internal URL          ║
 ║                                                              ║
 ║ 6. After first deploy, run via Render Shell:                   ║
-║    npx prisma migrate deploy                                  ║
-║    npx prisma db seed                                         ║
-║    (Creates tables and admin user: admin@test.com / admin123)  ║
-║                                                              ║
-║ 7. Verify:                                                     ║
-║    curl https://your-backend.onrender.com/api/health           ║
-║    Expected: {"status":"ok","database":"healthy"}              ║
+  ║    npx prisma migrate deploy                                  ║
+  ║    npx prisma db seed                                         ║
+  ║    (Creates tables and admin user: admin@test.com / admin123)  ║
+  ║                                                              ║
+  ║ 7. (Optional) Enable persistent disk for Render:              ║
+  ║    Render free tier has ephemeral storage. If you need         ║
+  ║    persistent disk for MinIO uploads, upgrade to a paid       ║
+  ║    plan or use an external S3 provider (AWS S3, R2, etc).     ║
+  ║    Set MINIO_ENDPOINT, MINIO_ACCESS_KEY, MINIO_SECRET_KEY     ║
+  ║    to point at your external S3-compatible storage.           ║
+  ║                                                              ║
+  ║ 8. Verify:                                                     ║
+  ║    curl https://your-backend.onrender.com/api/health           ║
+  ║    Expected: {"status":"ok","database":"healthy"}              ║
+  ║    curl -X POST <backend>/api/csv/sessions/<id>/ai-summary     ║
+  ║    (generates AI dataset analysis — cached in Redis 5 min)     ║
 ║                                                              ║
 ╚══════════════════════════════════════════════════════════════╝
 
