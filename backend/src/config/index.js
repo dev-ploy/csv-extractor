@@ -1,9 +1,10 @@
-require('dotenv').config();
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../../../.env') });
 
 const config = {
   PORT: parseInt(process.env.PORT, 10) || 3000,
   NODE_ENV: process.env.NODE_ENV || 'development',
-  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/csv_extractor',
+  DATABASE_URL: process.env.DATABASE_URL || 'postgresql://postgres:postgres@localhost:5432/postgredb',
   CORS_ORIGIN: process.env.CORS_ORIGIN || 'http://localhost:3000',
   MAX_FILE_SIZE_MB: parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 25,
 
@@ -29,7 +30,7 @@ const config = {
     'crm_note', 'data_source', 'possession_time', 'description',
   ],
 
-  BATCH_SIZE: 500,
+  BATCH_SIZE: parseInt(process.env.BATCH_SIZE, 10) || 50,
   MAX_PREVIEW_ROWS: 10,
 };
 

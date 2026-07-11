@@ -1,28 +1,48 @@
-const app = require('./app');
+const createApp = require('./app');
 const config = require('./config');
 const logger = require('./utils/logger');
-const { initMinio } = require('./storage/minioClient');
-const { connectDatabase, disconnectDatabase } = require('./db/connection');
+const { initMinio } = require('./infra/minio');
+const { connectDatabase, disconnectDatabase } = require('./infra/prisma');
+const cache = require('./services/cacheService');
+
+process.on('uncaughtException', (err) => {
+  logger.fatal({ err, type: 'uncaughtException' }, 'Uncaught exception');
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error({ err: reason, type: 'unhandledRejection' }, 'Unhandled rejection');
+});
 
 async function main() {
-  // 1. Initialize infrastructure
-  await connectDatabase();
-  await initMinio(config);
-  logger.info('All infrastructure initialized');
+  logger.info({ node: process.version, platform: process.platform }, 'Starting server');
 
-  // 2. Start HTTP server
+  await connectDatabase();
+  await initMinio();
+  cache.getRedis();
+  logger.info({ cache: cache.enabled ? 'connected' : 'unavailable' }, 'All infrastructure initialized');
+
+  const app = createApp();
   const server = app.listen(config.PORT, () => {
     logger.info({ port: config.PORT, env: config.NODE_ENV }, 'Server started');
   });
 
-  // 3. Graceful shutdown — close DB, drain connections
   const shutdown = async (signal) => {
     logger.info({ signal }, 'Shutting down gracefully');
     server.close(async () => {
+      logger.info('HTTP server closed');
       await disconnectDatabase();
+      try {
+        const r = await cache.getRedis();
+        if (r) await r.quit();
+      } catch { /* ignore */ }
+      logger.info('Database disconnected');
       process.exit(0);
     });
-    setTimeout(() => { logger.error('Forced shutdown'); process.exit(1); }, 30000);
+    setTimeout(() => {
+      logger.error('Forced shutdown after timeout');
+      process.exit(1);
+    }, 30000);
   };
 
   process.on('SIGTERM', () => shutdown('SIGTERM'));

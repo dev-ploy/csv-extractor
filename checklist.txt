@@ -1,123 +1,134 @@
-upload a csv ->
-preview it csv (like all fields display the data and also it should in horizontal view, vertical view , sticky headers and responsive design )->
-confirm import (backend)
-display parsed (parsed records , skipped records , total imported , total skipped)
+==============================================================
+  CSV EXTRACTOR — PRODUCTION DEPLOYMENT CHECKLIST
+==============================================================
 
+PREREQUISITES
+  - A Render account (free tier works: https://render.com)
+  - A Vercel account (free tier: https://vercel.com)
+  - A PostgreSQL provider (Render built-in, Neon, or Supabase)
+  - A Redis provider (Upstash free tier or Render Redis)
+  - S3-compatible storage (AWS S3, Cloudflare R2, or MinIO)
+  - At least one AI provider key (Groq, HF, or OpenAI)
 
-backend
-accept csv
-parse all csv into db records
-ai extraction layer maps the fields -> return structured json 
-fields 
-created_at 
-email
-country_code
-mobile_without_country_code
-company
-city
-state
-country
-lead_owner  Lead owner 
-crm_status  Lead status 
-crm_note  Notes/remarks 
-data_source  Source 
-possession_time
-description
+ENVIRONMENT (.env)
+  Copy .env.example → .env and fill in all values
 
-routes-> api endpoints
-controllers-> request and responses 
-db-> db layer
-services-> core logic
-repo-> dof db layer
-infra-> groq redis temporal logging docker k8s 
+╔══════════════════════════════════════════════════════════════╗
+║                   RENDER — BACKEND DEPLOY                   ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║ 1. Push code to GitHub (or connect Render to your repo)      ║
+║                                                              ║
+║ 2. Create a new Web Service on Render:                       ║
+║    - Name: csv-extractor-backend                              ║
+║    - Root Directory: backend                                  ║
+║    - Runtime: Node                                           ║
+║    - Build Command: npm install && npx prisma generate        ║
+║    - Start Command: npm start                                 ║
+║    - Instance Type: Free                                      ║
+║                                                              ║
+║ 3. Add Environment Variables in Render dashboard:             ║
+║    NODE_ENV=production                                        ║
+║    PORT=3000                                                  ║
+║    DATABASE_URL=postgresql://... (see step 4)                 ║
+║    REDIS_URL=redis://... (see step 5)                         ║
+║    MINIO_ENDPOINT=https://your-s3-endpoint                    ║
+║    MINIO_ACCESS_KEY=...                                       ║
+║    MINIO_SECRET_KEY=...                                       ║
+║    MINIO_BUCKET=csv-uploads                                   ║
+║    MINIO_REGION=us-east-1                                     ║
+║    CORS_ORIGIN=https://your-frontend.vercel.app               ║
+║    GROQ_API_KEY=gsk_...                                       ║
+║    HF_TOKEN=hf_...                                            ║
+║    OPENAI_API_KEY=sk-...                                      ║
+║    JWT_SECRET=<random 64-char hex string>                     ║
+║    BATCH_SIZE=500                                             ║
+║                                                              ║
+║ 4. PostgreSQL — Use Render's built-in Postgres:               ║
+║    - Create a new Postgres DB in Render dashboard             ║
+║    - Copy the Internal Database URL into DATABASE_URL         ║
+║    - Run migrations after deploy (step 6)                     ║
+║                                                              ║
+║ 5. Redis — Use Upstash (free) or Render Redis:               ║
+║    - Upstash: create a free Redis DB, copy REST URL           ║
+║    - Render: create Redis service, copy Internal URL          ║
+║                                                              ║
+║ 6. After first deploy, run via Render Shell:                   ║
+║    npx prisma migrate deploy                                  ║
+║    npx prisma db seed                                         ║
+║    (Creates tables and admin user: admin@test.com / admin123)  ║
+║                                                              ║
+║ 7. Verify:                                                     ║
+║    curl https://your-backend.onrender.com/api/health           ║
+║    Expected: {"status":"ok","database":"healthy"}              ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 
+╔══════════════════════════════════════════════════════════════╗
+║                 VERCEL — FRONTEND DEPLOY                     ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║ 1. Push code to GitHub (or connect Vercel to your repo)      ║
+║                                                              ║
+║ 2. Import project in Vercel dashboard:                       ║
+║    - Git Repository: your-repo                                ║
+║    - Root Directory: frontend                                 ║
+║    - Framework: Next.js                                      ║
+║    - Build Command: npm run build (default)                   ║
+║    - Output Directory: .next (default)                        ║
+║                                                              ║
+║ 3. Add Environment Variable in Vercel:                        ║
+║    BACKEND_URL=https://your-backend.onrender.com               ║
+║                                                              ║
+║    The next.config.js reads BACKEND_URL to rewrite            ║
+║    /api/* requests to your Render backend.                   ║
+║                                                              ║
+║ 4. Deploy — Vercel auto-deploys on git push to main           ║
+║    Or trigger manually: npx vercel --prod                     ║
+║                                                              ║
+║ 5. Verify:                                                    ║
+║    Open https://your-frontend.vercel.app in browser           ║
+║    Register a new account → Upload CSV → Run AI mapping       ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 
-frontend ( user is regiseted in db)
-   |
-upload csv
-    |
-route 
-    |
-controller
-    |
-service
-    |
-infra 
-    |
-db 
-    |
-response 
+╔══════════════════════════════════════════════════════════════╗
+║             ALTERNATIVE: DOCKER (SINGLE SERVER)              ║
+╠══════════════════════════════════════════════════════════════╣
+║                                                              ║
+║ If you have a single VPS (DigitalOcean, Linode, etc):        ║
+║                                                              ║
+║ 1. Clone repo on the server                                  ║
+║ 2. cd docker                                                  ║
+║ 3. Create .env with GROQ_API_KEY, HF_TOKEN, JWT_SECRET       ║
+║ 4. docker compose up -d                                      ║
+║ 5. docker compose exec backend npx prisma migrate deploy     ║
+║ 6. docker compose exec backend npx prisma db seed            ║
+║ 7. Access frontend at http://server-ip:3001                   ║
+║                                                              ║
+╚══════════════════════════════════════════════════════════════╝
 
-| Layer          | Technology       | Why?                                    |
-| -------------- | ---------------- | --------------------------------------- |
-| Runtime        | Node.js          | Fast I/O and rich ecosystem             |
-| Framework      | Express          | Simple and widely used                  |
-| Language       | Javascript       | Type safety and maintainability         |
-| Database       | PostgreSQL       | Relational data with strong consistency |
-| ORM            | Prisma           | Excellent developer experience          |
-| Cache          | Redis            | Fast caching and progress tracking      |
-| AI             | Groq SDK         | Low latency inference                   |
-| Workflow       | Temporal         | Durable background workflows            |
-| Validation     | Zod              | Runtime validation                      |
-| Authentication | JWT + bcrypt     | Stateless auth                          |
-| Logging        | Winston/Pino     | Structured logs                         |
-| Testing        | Jest + Supertest | Unit and integration testing            |
+SECURITY CHECKS
+  √ .env not committed (in .gitignore)
+  √ JWT authentication on all /api/csv/ routes
+  √ RBAC permissions checked per route
+  √ Multer fileFilter restricts to CSV only
+  √ Input validation on registration (email, password length)
+  √ Passwords hashed with bcrypt
+  √ CORS restricted to frontend origin
+  √ Rate limiting on auth routes
 
+MONITORING
+  - Backend logs to stdout (structured JSON via pino)
+  - Render dashboard: view logs, restart, scale
+  - Vercel dashboard: deployment logs, analytics
+  - PostgreSQL: monitor connection pool size
+  - Redis: monitor memory usage
 
-
-backend/
-│
-├── src/
-│
-├── api/
-│   ├── routes/
-│   ├── controllers/
-│   └── middleware/
-│
-├── services/
-│
-├── repositories/
-│
-├── database/
-│   ├── prisma/
-│   └── migrations/
-│
-├── models/
-│
-├── validators/
-│
-├── llm/
-│
-├── cache/
-│
-├── temporal/
-│
-├── auth/
-│
-├── permissions/
-│
-├── config/
-│
-├── utils/
-│
-├── types/
-│
-├── workers/
-│
-├── tests/
-│
-└── server.ts
-
-clean architecture
-Layered design
-solid principles 
-
-responsive frontend
-scalable backend 
-ai layer
-persistence
-workflow
-cache
-security
-observability
-quality tests
+SCALING
+  - Backend: stateless → horizontal scale behind load balancer
+  - Frontend: Vercel auto-scales globally
+  - Database: upgrade Render Postgres plan or use Neon/Supabase
+  - Redis: upgrade Upstash plan for more connections
+  - Storage: use AWS S3 instead of MinIO for multi-region
+  - BATCH_SIZE: increase for larger CSV imports

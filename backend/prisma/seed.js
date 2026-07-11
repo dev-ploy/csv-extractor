@@ -1,34 +1,33 @@
 const { PrismaClient } = require('@prisma/client');
-const prisma = new PrismaClient();
+const bcrypt = require('bcryptjs');
+const path = require('path');
+require('dotenv').config({ path: path.resolve(__dirname, '../.env') });
+
+const prisma = new PrismaClient({
+  datasources: { db: { url: process.env.DATABASE_URL } },
+});
 
 async function main() {
-  console.log('[SEED] Seeding database...');
+  console.log('Seeding users...');
 
-  // Create a sample session
-  const session = await prisma.uploadSession.create({
-    data: {
-      filename: 'sample_import.csv',
-      originalCsv: 'seed-sample.csv',
-      totalRows: 0,
-      status: 'pending',
-    },
-  });
+  const users = [
+    { email: 'admin@csv-extractor.com', password: bcrypt.hashSync('admin123', 12), name: 'Admin', role: 'admin' },
+    { email: 'user@csv-extractor.com', password: bcrypt.hashSync('user123', 12), name: 'User', role: 'user' },
+  ];
 
-  console.log(`[SEED] Created session: ${session.id}`);
+  for (const user of users) {
+    const existing = await prisma.user.findUnique({ where: { email: user.email } });
+    if (existing) {
+      console.log(`  Already exists: ${user.email}`);
+      continue;
+    }
+    await prisma.user.create({ data: user });
+    console.log(`  Created: ${user.email} (${user.role})`);
+  }
 
-  // Create sample leads
-  const leads = await prisma.lead.createMany({
-    data: [
-      { uploadSessionId: session.id, email: 'john@example.com', company: 'Acme Corp', importStatus: 'parsed' },
-      { uploadSessionId: session.id, email: 'jane@example.com', company: 'Globex', importStatus: 'parsed' },
-    ],
-    skipDuplicates: true,
-  });
-
-  console.log(`[SEED] Created ${leads.count} leads`);
-  console.log('[SEED] Done');
+  console.log('Seed complete.');
 }
 
 main()
-  .catch((e) => { console.error('[SEED] Error:', e); process.exit(1); })
+  .catch((e) => { console.error(e); process.exit(1); })
   .finally(() => prisma.$disconnect());
